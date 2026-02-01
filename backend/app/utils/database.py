@@ -1,0 +1,70 @@
+"""
+Utilidades para manejo de base de datos PostgreSQL.
+"""
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
+from contextlib import contextmanager
+from typing import Generator
+
+from app.config import settings
+from app.models.expense import Base
+
+
+# Crear engine de base de datos
+engine = create_engine(
+    settings.get_database_url(),
+    pool_pre_ping=True,  # Verifica conexiones antes de usarlas
+    echo=settings.is_development(),  # Logging SQL en desarrollo
+)
+
+# Crear SessionLocal
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def init_db():
+    """Inicializa la base de datos creando todas las tablas."""
+    Base.metadata.create_all(bind=engine)
+    print("✅ Base de datos inicializada correctamente")
+
+
+def get_db() -> Generator[Session, None, None]:
+    """
+    Dependency para obtener una sesión de base de datos.
+    Uso: db = next(get_db())
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@contextmanager
+def get_db_session() -> Generator[Session, None, None]:
+    """
+    Context manager para sesiones de base de datos.
+
+    Uso:
+    with get_db_session() as db:
+        # usar db aquí
+    """
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def reset_database():
+    """Elimina y recrea todas las tablas. ⚠️ SOLO PARA DESARROLLO."""
+    if not settings.is_development():
+        raise RuntimeError("reset_database() solo puede usarse en desarrollo")
+
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    print("✅ Base de datos reiniciada correctamente")

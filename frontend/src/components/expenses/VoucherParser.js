@@ -1,0 +1,357 @@
+import React, { useState } from 'react';
+import { toast } from 'react-toastify';
+import { expensesAPI } from '../../utils/api';
+import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../../utils/constants';
+
+const VoucherParser = ({ onSuccess }) => {
+  const [voucherText, setVoucherText] = useState('');
+  const [extractedData, setExtractedData] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Función para extraer datos del voucher
+  const parseVoucher = (text) => {
+    const data = {
+      amount: null,
+      description: '',
+      date: null,
+      payment_method: '',
+      notes: text.substring(0, 200), // Guardar parte del texto original
+    };
+
+    // Extraer monto - buscar patrones como ₡1.000,00 o $100.00 o 1000.00 o 1,000.00
+    const amountPatterns = [
+      /₡\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)/,
+      /\$\s*([0-9]{1,3}(?:,?[0-9]{3})*(?:\.[0-9]{2})?)/,
+      /(?:total|monto|importe|amount)[\s:]*₡?\$?\s*([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)/i,
+      /([0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{2})?)/,
+    ];
+
+    for (const pattern of amountPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        // Limpiar el número: eliminar puntos y reemplazar coma por punto si es decimal
+        let amount = match[1].replace(/\./g, '').replace(',', '.');
+        data.amount = parseFloat(amount);
+        if (!isNaN(data.amount) && data.amount > 0) {
+          break;
+        }
+      }
+    }
+
+    // Extraer fecha - buscar patrones de fecha
+    const datePatterns = [
+      /(\d{1,2})[/-](\d{1,2})[/-](\d{4})/,
+      /(\d{4})[/-](\d{1,2})[/-](\d{1,2})/,
+      /(\d{1,2})\s+(?:de\s+)?([a-záéíóú]+)\s+(?:de\s+)?(\d{4})/i,
+    ];
+
+    for (const pattern of datePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        try {
+          let day, month, year;
+
+          if (pattern.source.includes('[a-z')) {
+            // Formato: 15 de enero de 2024
+            const months = {
+              enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+              julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
+            };
+            day = parseInt(match[1]);
+            month = months[match[2].toLowerCase()];
+            year = parseInt(match[3]);
+          } else if (match[1].length === 4) {
+            // Formato: YYYY-MM-DD
+            year = parseInt(match[1]);
+            month = parseInt(match[2]);
+            day = parseInt(match[3]);
+          } else {
+            // Formato: DD-MM-YYYY
+            day = parseInt(match[1]);
+            month = parseInt(match[2]);
+            year = parseInt(match[3]);
+          }
+
+          const date = new Date(year, month - 1, day);
+          if (!isNaN(date.getTime())) {
+            data.date = date.toISOString().split('T')[0];
+            break;
+          }
+        } catch (e) {
+          console.error('Error parsing date:', e);
+        }
+      }
+    }
+
+    // Si no se encontró fecha, usar hoy
+    if (!data.date) {
+      data.date = new Date().toISOString().split('T')[0];
+    }
+
+    // Extraer comercio/descripción - buscar después de palabras clave
+    const commercePatterns = [
+      /(?:comercio|establecimiento|merchant|negocio)[\s:]+([^\n]{3,50})/i,
+      /(?:en|at)[\s:]+([A-Z][^\n]{3,50})/,
+    ];
+
+    for (const pattern of commercePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        data.description = match[1].trim().substring(0, 100);
+        break;
+      }
+    }
+
+    // Si no se encontró descripción, usar las primeras palabras
+    if (!data.description) {
+      const lines = text.split('\n').filter(line => line.trim().length > 5);
+      if (lines.length > 0) {
+        data.description = lines[0].substring(0, 100);
+      }
+    }
+
+    // Detectar método de pago
+    const paymentPatterns = {
+      'Tarjeta de Crédito': /tarjeta.*cr[eé]dito|credit.*card|visa|mastercard/i,
+      'Tarjeta de Débito': /tarjeta.*d[eé]bito|debit.*card/i,
+      'SINPE Móvil': /sinpe|sinpe.*m[oó]vil/i,
+      'Transferencia': /transferencia|transfer/i,
+      'Efectivo': /efectivo|cash/i,
+    };
+
+    for (const [method, pattern] of Object.entries(paymentPatterns)) {
+      if (pattern.test(text)) {
+        data.payment_method = method;
+        break;
+      }
+    }
+
+    return data;
+  };
+
+  const handleAnalyze = () => {
+    if (!voucherText.trim()) {
+      toast.error('Por favor pega el contenido del voucher');
+      return;
+    }
+
+    setIsAnalyzing(true);
+
+    // Simular un pequeño delay para dar feedback visual
+    setTimeout(() => {
+      const data = parseVoucher(voucherText);
+
+      if (!data.amount) {
+        toast.warning('No se pudo detectar el monto. Por favor ingrésalo manualmente.');
+      }
+
+      setExtractedData(data);
+      setIsAnalyzing(false);
+      toast.success('Voucher analizado. Revisa y confirma los datos.');
+    }, 500);
+  };
+
+  const handleSave = async () => {
+    if (!extractedData.amount || extractedData.amount <= 0) {
+      toast.error('El monto debe ser mayor a 0');
+      return;
+    }
+
+    if (!extractedData.description.trim()) {
+      toast.error('La descripción es requerida');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      await expensesAPI.create(extractedData);
+      toast.success('Gasto agregado exitosamente');
+
+      // Limpiar formulario
+      setVoucherText('');
+      setExtractedData(null);
+
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error al guardar gasto:', error);
+      toast.error('Error al guardar el gasto');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    setVoucherText('');
+    setExtractedData(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          Importación Rápida desde Voucher
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Pega el contenido de tu email de voucher/recibo aquí y extraeremos automáticamente los datos
+        </p>
+      </div>
+
+      {/* Área de texto para pegar el voucher */}
+      <div>
+        <label className="form-label">Contenido del Voucher</label>
+        <textarea
+          value={voucherText}
+          onChange={(e) => setVoucherText(e.target.value)}
+          placeholder="Pega aquí el texto completo de tu email de voucher o recibo digital..."
+          className="form-input font-mono text-sm"
+          rows={8}
+          disabled={extractedData !== null}
+        />
+      </div>
+
+      {/* Botones de acción */}
+      {!extractedData ? (
+        <div className="flex gap-2">
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || !voucherText.trim()}
+            className="btn btn-primary"
+          >
+            {isAnalyzing ? 'Analizando...' : 'Analizar Voucher'}
+          </button>
+          {voucherText && (
+            <button onClick={handleReset} className="btn btn-secondary">
+              Limpiar
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Preview de datos extraídos */}
+          <div className="card bg-blue-50 border border-blue-200">
+            <h4 className="font-semibold text-gray-900 mb-4">Datos Extraídos</h4>
+
+            <div className="space-y-3">
+              {/* Monto */}
+              <div>
+                <label className="form-label">Monto (CRC)</label>
+                <input
+                  type="number"
+                  value={extractedData.amount || ''}
+                  onChange={(e) => setExtractedData({ ...extractedData, amount: parseFloat(e.target.value) })}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="form-label">Descripción</label>
+                <input
+                  type="text"
+                  value={extractedData.description}
+                  onChange={(e) => setExtractedData({ ...extractedData, description: e.target.value })}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              {/* Fecha */}
+              <div>
+                <label className="form-label">Fecha</label>
+                <input
+                  type="date"
+                  value={extractedData.date}
+                  onChange={(e) => setExtractedData({ ...extractedData, date: e.target.value })}
+                  className="form-input"
+                  required
+                />
+              </div>
+
+              {/* Categoría */}
+              <div>
+                <label className="form-label">Categoría</label>
+                <select
+                  value={extractedData.category || ''}
+                  onChange={(e) => setExtractedData({ ...extractedData, category: e.target.value })}
+                  className="form-input"
+                  required
+                >
+                  <option value="">Seleccionar categoría</option>
+                  {EXPENSE_CATEGORIES.map((cat) => (
+                    <option key={cat.name} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Método de pago */}
+              <div>
+                <label className="form-label">Método de Pago</label>
+                <select
+                  value={extractedData.payment_method}
+                  onChange={(e) => setExtractedData({ ...extractedData, payment_method: e.target.value })}
+                  className="form-input"
+                >
+                  <option value="">Seleccionar método</option>
+                  {PAYMENT_METHODS.map((method) => (
+                    <option key={method} value={method}>
+                      {method}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Notas */}
+              <div>
+                <label className="form-label">Notas (opcional)</label>
+                <textarea
+                  value={extractedData.notes || ''}
+                  onChange={(e) => setExtractedData({ ...extractedData, notes: e.target.value })}
+                  className="form-input"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="btn btn-success"
+              >
+                {isSaving ? 'Guardando...' : 'Confirmar y Agregar Gasto'}
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={isSaving}
+                className="btn btn-secondary"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Ayuda */}
+      <div className="card bg-gray-50">
+        <h4 className="font-semibold text-gray-900 mb-2 text-sm">Consejos:</h4>
+        <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+          <li>Copia todo el contenido del email del voucher</li>
+          <li>El sistema buscará el monto, fecha y comercio automáticamente</li>
+          <li>Revisa siempre los datos extraídos antes de confirmar</li>
+          <li>Puedes editar cualquier campo antes de guardar</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default VoucherParser;
