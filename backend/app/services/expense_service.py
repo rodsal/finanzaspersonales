@@ -47,7 +47,7 @@ class ExpenseService:
     def get_all_expenses(
         db: Session,
         skip: int = 0,
-        limit: int = 100,
+        limit: Optional[int] = None,
         category: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -73,7 +73,10 @@ class ExpenseService:
         total = query.count()
 
         # Aplicar paginación
-        expenses = query.offset(skip).limit(limit).all()
+        query = query.offset(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        expenses = query.all()
 
         return expenses, total
 
@@ -125,6 +128,17 @@ class ExpenseService:
         return True
 
     @staticmethod
+    def delete_all_expenses(db: Session) -> int:
+        """
+        Elimina todos los gastos.
+        Retorna el número de gastos eliminados.
+        """
+        count = db.query(Expense).count()
+        db.query(Expense).delete()
+        db.commit()
+        return count
+
+    @staticmethod
     def get_summary_by_category(
         db: Session,
         start_date: Optional[datetime] = None,
@@ -151,6 +165,31 @@ class ExpenseService:
 
         # Ordenar por total descendente
         query = query.order_by(func.sum(Expense.amount).desc())
+        
+        # Join with ExpenseCategory to get max_spend
+        # Since we are grouping by Expense.category (string), and ExpenseCategory.name is the join key
+        # But we need to be careful with the join.
+        # Actually, let's fetch the summary first, then enrich it with category details, OR do a join.
+        # A join is better. 
+        # But wait, the query currently selects Expense.category (string).
+        # Let's adjust the query to join.
+        
+        query = db.query(
+            Expense.category,
+            func.sum(Expense.amount).label("total"),
+            func.count(Expense.id).label("count"),
+            func.avg(Expense.amount).label("average"),
+            ExpenseCategory.max_spend
+        ).outerjoin(ExpenseCategory, Expense.category == ExpenseCategory.name)
+        
+        # Apply filters again on the new query object
+        if start_date:
+            query = query.filter(Expense.date >= start_date)
+        if end_date:
+            query = query.filter(Expense.date <= end_date)
+            
+        query = query.group_by(Expense.category, ExpenseCategory.max_spend)
+        query = query.order_by(func.sum(Expense.amount).desc())
 
         results = query.all()
 
@@ -160,6 +199,7 @@ class ExpenseService:
                 "total": float(row.total),
                 "count": row.count,
                 "average": float(row.average),
+                "max_spend": float(row.max_spend) if row.max_spend is not None else None,
             }
             for row in results
         ]
@@ -235,6 +275,7 @@ class CategoryService:
         description: Optional[str] = None,
         color: Optional[str] = None,
         icon: Optional[str] = None,
+        max_spend: Optional[float] = None,
     ) -> ExpenseCategory:
         """Crea una nueva categoría personalizada."""
         category = ExpenseCategory(
@@ -242,6 +283,7 @@ class CategoryService:
             description=description,
             color=color,
             icon=icon,
+            max_spend=max_spend,
         )
         db.add(category)
         db.commit()
@@ -266,6 +308,7 @@ class CategoryService:
         description: Optional[str] = None,
         color: Optional[str] = None,
         icon: Optional[str] = None,
+        max_spend: Optional[float] = None,
     ) -> Optional[ExpenseCategory]:
         """Actualiza una categoría."""
         category = CategoryService.get_category_by_id(db, category_id)
@@ -280,6 +323,8 @@ class CategoryService:
             category.color = color
         if icon is not None:
             category.icon = icon
+        if max_spend is not None:
+            category.max_spend = max_spend
 
         db.commit()
         db.refresh(category)

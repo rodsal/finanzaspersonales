@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { expensesAPI } from '../../utils/api';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../../utils/constants';
+import { PAYMENT_METHODS } from '../../utils/constants';
 import useCurrency from '../../hooks/useCurrency';
 
-const ExpenseForm = ({ onSuccess, editingExpense = null, onCancel = null }) => {
+const ExpenseForm = ({ onSuccess, editingExpense = null, onCancel = null, categories = [] }) => {
   const { exchangeRate } = useCurrency();
   const [formData, setFormData] = useState({
     description: editingExpense?.description || '',
@@ -175,9 +175,9 @@ const ExpenseForm = ({ onSuccess, editingExpense = null, onCancel = null }) => {
             required
           >
             <option value="">Selecciona una categoría</option>
-            {EXPENSE_CATEGORIES.map((cat) => (
-              <option key={cat.name} value={cat.name}>
-                {cat.icon} {cat.name}
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.name}>
+                {cat.name}
               </option>
             ))}
           </select>

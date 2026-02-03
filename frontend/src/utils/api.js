@@ -52,6 +52,14 @@ export const expensesAPI = {
     return response.data;
   },
 
+  // Eliminar todos los gastos
+  deleteAll: async () => {
+    const response = await api.delete('/expenses/all', {
+      params: { confirm: 'true' }
+    });
+    return response.data;
+  },
+
   // Obtener resumen por categoría
   getSummaryByCategory: async (params = {}) => {
     const response = await api.get('/expenses/summary/category', { params });

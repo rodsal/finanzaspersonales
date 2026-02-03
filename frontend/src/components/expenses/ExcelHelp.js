@@ -28,7 +28,7 @@ const ExcelHelp = () => {
             <div>
               <p className="font-medium mb-1">Columnas requeridas:</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
-                <li><strong>Fecha:</strong> Formato YYYY-MM-DD (ej: 2026-01-31)</li>
+                <li><strong>Fecha:</strong> Formato DD/MM/YYYY (ej: 31/01/2026) o YYYY-MM-DD</li>
                 <li><strong>Descripción:</strong> Texto descriptivo del gasto</li>
                 <li><strong>Monto (CRC):</strong> Número positivo en colones</li>
                 <li><strong>Categoría:</strong> Nombre de la categoría</li>

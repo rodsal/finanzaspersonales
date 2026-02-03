@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { expensesAPI } from '../../utils/api';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../../utils/constants';
+import { PAYMENT_METHODS } from '../../utils/constants';
+import useCurrency from '../../hooks/useCurrency';
 
-const VoucherParser = ({ onSuccess }) => {
+const VoucherParser = ({ onSuccess, categories = [] }) => {
+  const { exchangeRate } = useCurrency();
   const [voucherText, setVoucherText] = useState('');
   const [extractedData, setExtractedData] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [inputCurrency, setInputCurrency] = useState('CRC');
 
   // Función para extraer datos del voucher
   const parseVoucher = (text) => {
@@ -163,15 +166,32 @@ const VoucherParser = ({ onSuccess }) => {
       return;
     }
 
+    if (!extractedData.category) {
+      toast.error('La categoría es requerida');
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      await expensesAPI.create(extractedData);
+      // Convertir monto a CRC si se ingresó en USD
+      let amountInCRC = parseFloat(extractedData.amount);
+      if (inputCurrency === 'USD') {
+        amountInCRC = amountInCRC * exchangeRate;
+      }
+
+      const dataToSave = {
+        ...extractedData,
+        amount: amountInCRC,
+      };
+
+      await expensesAPI.create(dataToSave);
       toast.success('Gasto agregado exitosamente');
 
       // Limpiar formulario
       setVoucherText('');
       setExtractedData(null);
+      setInputCurrency('CRC');
 
       if (onSuccess) {
         onSuccess();
@@ -187,6 +207,7 @@ const VoucherParser = ({ onSuccess }) => {
   const handleReset = () => {
     setVoucherText('');
     setExtractedData(null);
+    setInputCurrency('CRC');
   };
 
   return (
@@ -238,14 +259,36 @@ const VoucherParser = ({ onSuccess }) => {
             <div className="space-y-3">
               {/* Monto */}
               <div>
-                <label className="form-label">Monto (CRC)</label>
-                <input
-                  type="number"
-                  value={extractedData.amount || ''}
-                  onChange={(e) => setExtractedData({ ...extractedData, amount: parseFloat(e.target.value) })}
-                  className="form-input"
-                  required
-                />
+                <label className="form-label">Monto *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      value={extractedData.amount || ''}
+                      onChange={(e) => setExtractedData({ ...extractedData, amount: parseFloat(e.target.value) })}
+                      className="form-input"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={inputCurrency}
+                      onChange={(e) => setInputCurrency(e.target.value)}
+                      className="form-input"
+                    >
+                      <option value="CRC">₡ CRC</option>
+                      <option value="USD">$ USD</option>
+                    </select>
+                  </div>
+                </div>
+                {inputCurrency === 'USD' && extractedData.amount && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Se convertirá a ₡{(extractedData.amount * exchangeRate).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (TC: {exchangeRate})
+                  </p>
+                )}
               </div>
 
               {/* Descripción */}
@@ -274,7 +317,7 @@ const VoucherParser = ({ onSuccess }) => {
 
               {/* Categoría */}
               <div>
-                <label className="form-label">Categoría</label>
+                <label className="form-label">Categoría *</label>
                 <select
                   value={extractedData.category || ''}
                   onChange={(e) => setExtractedData({ ...extractedData, category: e.target.value })}
@@ -282,8 +325,8 @@ const VoucherParser = ({ onSuccess }) => {
                   required
                 >
                   <option value="">Seleccionar categoría</option>
-                  {EXPENSE_CATEGORIES.map((cat) => (
-                    <option key={cat.name} value={cat.name}>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
                       {cat.name}
                     </option>
                   ))}

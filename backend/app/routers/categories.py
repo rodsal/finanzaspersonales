@@ -64,7 +64,8 @@ def create_category():
         "name": "Nombre de la categoría",
         "description": "Descripción",  // opcional
         "color": "#FF5733",  // opcional, formato hexadecimal
-        "icon": "shopping-cart"  // opcional
+        "icon": "shopping-cart",  // opcional
+        "max_spend": 1000.0  // opcional
     }
     """
     try:
@@ -85,6 +86,7 @@ def create_category():
                 description=data.get("description"),
                 color=data.get("color"),
                 icon=data.get("icon"),
+                max_spend=data.get("max_spend"),
             )
 
             return jsonify({
@@ -119,6 +121,7 @@ def update_category(category_id: int):
                 description=data.get("description"),
                 color=data.get("color"),
                 icon=data.get("icon"),
+                max_spend=data.get("max_spend"),
             )
 
             if not category:

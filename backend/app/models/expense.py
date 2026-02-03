@@ -33,6 +33,7 @@ class ExpenseCategory(Base):
     description = Column(String(255), nullable=True)
     color = Column(String(7), nullable=True)  # Formato hexadecimal #RRGGBB
     icon = Column(String(50), nullable=True)
+    max_spend = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -47,6 +48,7 @@ class ExpenseCategory(Base):
             "description": self.description,
             "color": self.color,
             "icon": self.icon,
+            "max_spend": self.max_spend,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

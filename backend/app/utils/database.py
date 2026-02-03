@@ -25,6 +25,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def init_db():
     """Inicializa la base de datos creando todas las tablas."""
     Base.metadata.create_all(bind=engine)
+    seed_default_categories()
     print("✅ Base de datos inicializada correctamente")
 
 
@@ -68,3 +69,26 @@ def reset_database():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     print("✅ Base de datos reiniciada correctamente")
+
+
+def seed_default_categories():
+    """Crea las categorías por defecto si no existen."""
+    from app.models.expense import ExpenseCategory, ExpenseCategoryEnum
+
+    with get_db_session() as db:
+        for category_enum in ExpenseCategoryEnum:
+            # Verificar si existe
+            existing = db.query(ExpenseCategory).filter(ExpenseCategory.name == category_enum.value).first()
+            
+            if not existing:
+                print(f"📌 Creando categoría por defecto: {category_enum.value}")
+                new_category = ExpenseCategory(
+                    name=category_enum.value,
+                    description=f"Categoría predefinida: {category_enum.value}",
+                    icon="🏷️",  # Icono genérico
+                    color="#6b7280"  # Gray-500
+                )
+                db.add(new_category)
+        
+        db.commit()
+    print("✅ Categorías por defecto verificadas")

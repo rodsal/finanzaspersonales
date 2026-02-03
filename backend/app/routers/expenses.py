@@ -27,7 +27,7 @@ def get_expenses():
     try:
         # Obtener parámetros
         skip = request.args.get("skip", 0, type=int)
-        limit = request.args.get("limit", 100, type=int)
+        limit = request.args.get("limit", None, type=int)
         category = request.args.get("category", None)
         start_date_str = request.args.get("start_date", None)
         end_date_str = request.args.get("end_date", None)
@@ -341,6 +341,42 @@ def get_total():
             return jsonify({
                 "success": True,
                 "total": total,
+            }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+        }), 500
+
+
+@expenses_bp.route("/all", methods=["DELETE"])
+def delete_all_expenses():
+    """
+    Elimina todos los gastos.
+
+    PRECAUCIÓN: Esta operación no se puede deshacer.
+
+    Query params:
+    - confirm: debe ser 'true' para confirmar (seguridad adicional)
+    """
+    try:
+        # Verificar confirmación
+        confirm = request.args.get("confirm", "false")
+        if confirm.lower() != "true":
+            return jsonify({
+                "success": False,
+                "error": "Se requiere confirmación explícita",
+            }), 400
+
+        # Eliminar todos los gastos
+        with get_db_session() as db:
+            deleted_count = ExpenseService.delete_all_expenses(db)
+
+            return jsonify({
+                "success": True,
+                "message": f"{deleted_count} gastos eliminados exitosamente",
+                "deleted_count": deleted_count,
             }), 200
 
     except Exception as e:

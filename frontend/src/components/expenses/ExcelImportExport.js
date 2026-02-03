@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify';
 import { expensesAPI } from '../../utils/api';
-import useCurrency from '../../hooks/useCurrency';
 import { format } from 'date-fns';
-import ExcelHelp from './ExcelHelp';
 
 const ExcelImportExport = ({ expenses, onImportComplete }) => {
-  const { exchangeRate } = useCurrency();
   const [importing, setImporting] = useState(false);
   const fileInputRef = React.createRef();
 
@@ -80,7 +77,7 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
       reader.onload = async (e) => {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
 
           // Leer la primera hoja
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -92,6 +89,59 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
             return;
           }
 
+          // Función helper para procesar fechas de Excel
+          const parseExcelDate = (value, rowIndex) => {
+            if (!value) {
+              return new Date();
+            }
+
+            // Si ya es un objeto Date (gracias a cellDates: true)
+            if (value instanceof Date) {
+              return value;
+            }
+
+            // Si es un número (fecha serial de Excel que no se convirtió)
+            if (typeof value === 'number') {
+              // Convertir número serial de Excel a fecha
+              const excelEpoch = new Date(1899, 11, 30);
+              const days = Math.floor(value);
+              const date = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000);
+              return date;
+            }
+
+            // Si es una cadena, intentar parsearla
+            if (typeof value === 'string') {
+              const trimmed = value.trim();
+
+              // Detectar formato DD/MM/YYYY o DD-MM-YYYY
+              const ddmmyyyyPattern = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/;
+              const match = trimmed.match(ddmmyyyyPattern);
+
+              if (match) {
+                const day = parseInt(match[1], 10);
+                const month = parseInt(match[2], 10) - 1;
+                const year = parseInt(match[3], 10);
+
+                const date = new Date(year, month, day);
+
+                if (date.getFullYear() === year &&
+                    date.getMonth() === month &&
+                    date.getDate() === day) {
+                  return date;
+                }
+              }
+
+              // Si no es DD/MM/YYYY, intentar parsear normalmente
+              const parsed = new Date(trimmed);
+              if (!isNaN(parsed.getTime())) {
+                return parsed;
+              }
+            }
+
+            console.warn(`Fila ${rowIndex + 2}: No se pudo parsear la fecha "${value}" (tipo: ${typeof value})`);
+            return new Date();
+          };
+
           // Validar y convertir datos
           const validExpenses = [];
           const errors = [];
@@ -99,8 +149,8 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
           jsonData.forEach((row, index) => {
             try {
               // Mapear columnas (soportar diferentes nombres)
-              const fecha =
-                row.Fecha || row.fecha || row.Date || row.date || new Date().toISOString();
+              const fechaRaw = row.Fecha || row.fecha || row.Date || row.date;
+              const fecha = parseExcelDate(fechaRaw, index);
               const descripcion =
                 row.Descripción || row.descripcion || row.Description || row.description;
               const monto =
@@ -136,7 +186,7 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
                 description: descripcion,
                 amount: parseFloat(monto),
                 category: categoria,
-                date: new Date(fecha).toISOString(),
+                date: fecha.toISOString(),
                 payment_method: metodoPago,
                 notes: notas,
               });
@@ -216,9 +266,12 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
   // Descargar plantilla de Excel
   const handleDownloadTemplate = () => {
     try {
+      // Crear fecha como Date object que Excel reconozca
+      const fechaEjemplo = new Date(2026, 0, 31); // 31 de enero de 2026
+
       const templateData = [
         {
-          Fecha: '2026-01-31',
+          Fecha: fechaEjemplo,
           Descripción: 'Ejemplo de gasto',
           'Monto (CRC)': 5000,
           Categoría: 'Alimentación',
@@ -228,6 +281,11 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
       ];
 
       const worksheet = XLSX.utils.json_to_sheet(templateData);
+
+      // Formatear la columna de fecha explícitamente
+      worksheet['A2'].t = 'd'; // Tipo fecha
+      worksheet['A2'].z = 'dd/mm/yyyy'; // Formato visual
+
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Gastos');
 
@@ -251,40 +309,35 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
-        {/* Botón de Exportar */}
-        <button
-          onClick={handleExport}
-          disabled={!expenses || expenses.length === 0}
-          className="btn btn-secondary text-sm whitespace-nowrap"
-          title="Exportar gastos a Excel"
-        >
-          Exportar
-        </button>
+    <>
+      {/* Botón de Exportar */}
+      <button
+        onClick={handleExport}
+        disabled={!expenses || expenses.length === 0}
+        className="btn btn-secondary text-sm whitespace-nowrap"
+        title="Exportar gastos a Excel"
+      >
+        Exportar
+      </button>
 
-        {/* Botón de Importar */}
-        <button
-          onClick={handleImportClick}
-          disabled={importing}
-          className="btn btn-primary text-sm whitespace-nowrap"
-          title="Importar gastos desde Excel"
-        >
-          {importing ? 'Importando...' : 'Importar'}
-        </button>
+      {/* Botón de Importar */}
+      <button
+        onClick={handleImportClick}
+        disabled={importing}
+        className="btn btn-primary text-sm whitespace-nowrap"
+        title="Importar gastos desde Excel"
+      >
+        {importing ? 'Importando...' : 'Importar'}
+      </button>
 
-        {/* Botón de Plantilla */}
-        <button
-          onClick={handleDownloadTemplate}
-          className="btn btn-secondary text-sm whitespace-nowrap"
-          title="Descargar plantilla de Excel"
-        >
-          Plantilla
-        </button>
-      </div>
-
-      {/* Ayuda sobre el formato */}
-      <ExcelHelp />
+      {/* Botón de Plantilla */}
+      <button
+        onClick={handleDownloadTemplate}
+        className="btn btn-secondary text-sm whitespace-nowrap"
+        title="Descargar plantilla de Excel"
+      >
+        Plantilla
+      </button>
 
       {/* Input oculto para seleccionar archivo */}
       <input
@@ -294,7 +347,7 @@ const ExcelImportExport = ({ expenses, onImportComplete }) => {
         onChange={handleImport}
         style={{ display: 'none' }}
       />
-    </div>
+    </>
   );
 };
 

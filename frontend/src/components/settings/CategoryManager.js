@@ -11,8 +11,12 @@ const CategoryManager = () => {
     name: '',
     description: '',
     color: '#3b82f6',
-    icon: '📦',
   });
+
+  const DEFAULT_CATEGORIES = [
+    "Alimentación", "Transporte", "Vivienda", "Servicios", "Salud",
+    "Educación", "Entretenimiento", "Ropa", "Tecnología", "Otros"
+  ];
 
   useEffect(() => {
     loadCategories();
@@ -53,7 +57,7 @@ const CategoryManager = () => {
         toast.success('Categoría creada');
       }
 
-      setFormData({ name: '', description: '', color: '#3b82f6', icon: '📦' });
+      setFormData({ name: '', description: '', color: '#3b82f6' });
       setEditingCategory(null);
       setShowForm(false);
       loadCategories();
@@ -69,7 +73,6 @@ const CategoryManager = () => {
       name: category.name,
       description: category.description || '',
       color: category.color || '#3b82f6',
-      icon: category.icon || '📦',
     });
     setShowForm(true);
   };
@@ -90,7 +93,7 @@ const CategoryManager = () => {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', description: '', color: '#3b82f6', icon: '📦' });
+    setFormData({ name: '', description: '', color: '#3b82f6' });
     setEditingCategory(null);
     setShowForm(false);
   };
@@ -136,15 +139,16 @@ const CategoryManager = () => {
             </div>
 
             <div>
-              <label className="form-label">Icono</label>
-              <input
-                type="text"
-                name="icon"
-                value={formData.icon}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="📦"
-              />
+              <label className="form-label">Color</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  name="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                  className="w-full h-10 rounded border border-gray-300 cursor-pointer p-1"
+                />
+              </div>
             </div>
           </div>
 
@@ -160,19 +164,7 @@ const CategoryManager = () => {
             />
           </div>
 
-          <div>
-            <label className="form-label">Color</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                name="color"
-                value={formData.color}
-                onChange={handleChange}
-                className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-              />
-              <span className="text-sm text-gray-600">{formData.color}</span>
-            </div>
-          </div>
+
 
           <div className="flex gap-2">
             <button type="submit" className="btn btn-primary">
@@ -189,34 +181,37 @@ const CategoryManager = () => {
         {categories.map((category) => (
           <div
             key={category.id}
-            className="card hover:shadow-lg transition-shadow"
-            style={{ borderLeft: `4px solid ${category.color || '#3b82f6'}` }}
+            className="card hover:shadow-lg transition-shadow border border-gray-100 p-5 flex flex-col justify-between"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">{category.icon || '📦'}</span>
-                <div>
-                  <h4 className="font-semibold text-gray-900">{category.name}</h4>
-                  {category.description && (
-                    <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                  )}
-                </div>
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: category.color || '#3b82f6' }}
+                ></div>
+                <h4 className="font-semibold text-gray-900 text-lg">{category.name}</h4>
               </div>
+
+              {category.description && (
+                <p className="text-sm text-gray-500">{category.description}</p>
+              )}
             </div>
 
-            <div className="flex gap-2 mt-4">
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-50">
               <button
                 onClick={() => handleEdit(category)}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                className="text-sm text-gray-600 hover:text-primary-600 font-medium px-2 py-1"
               >
                 Editar
               </button>
-              <button
-                onClick={() => handleDelete(category.id)}
-                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Eliminar
-              </button>
+              {!DEFAULT_CATEGORIES.includes(category.name) && (
+                <button
+                  onClick={() => handleDelete(category.id)}
+                  className="text-sm text-red-600 hover:text-red-700 px-2 py-1"
+                >
+                  Eliminar
+                </button>
+              )}
             </div>
           </div>
         ))}

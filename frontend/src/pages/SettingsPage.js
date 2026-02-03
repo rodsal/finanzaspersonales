@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CategoryManager from '../components/settings/CategoryManager';
 import CurrencySettings from '../components/settings/CurrencySettings';
+import MaxSpendManager from '../components/settings/MaxSpendManager';
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState('currency');
@@ -8,6 +9,7 @@ const SettingsPage = () => {
   const tabs = [
     { id: 'currency', name: 'Moneda' },
     { id: 'categories', name: 'Categorías' },
+    { id: 'maxspend', name: 'Límites de Gasto' },
   ];
 
   return (
@@ -49,6 +51,7 @@ const SettingsPage = () => {
       <div className="fade-in">
         {activeTab === 'currency' && <CurrencySettings />}
         {activeTab === 'categories' && <CategoryManager />}
+        {activeTab === 'maxspend' && <MaxSpendManager />}
       </div>
     </div>
   );
