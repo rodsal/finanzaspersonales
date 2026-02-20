@@ -9,6 +9,7 @@ from typing import Generator
 
 from app.config import settings
 from app.models.expense import Base
+from app.models.income import Income  # noqa: F401 — necesario para que Base.metadata conozca la tabla
 
 
 # Crear engine de base de datos

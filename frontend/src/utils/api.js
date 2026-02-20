@@ -113,6 +113,52 @@ export const categoriesAPI = {
   },
 };
 
+// ========== INCOMES API ==========
+
+export const incomeAPI = {
+  // Obtener todos los ingresos con filtros
+  getAll: async (params = {}) => {
+    const response = await api.get('/incomes', { params });
+    return response.data;
+  },
+
+  // Obtener un ingreso por ID
+  getById: async (id) => {
+    const response = await api.get(`/incomes/${id}`);
+    return response.data;
+  },
+
+  // Crear nuevo ingreso
+  create: async (data) => {
+    const response = await api.post('/incomes', data);
+    return response.data;
+  },
+
+  // Actualizar ingreso
+  update: async (id, data) => {
+    const response = await api.put(`/incomes/${id}`, data);
+    return response.data;
+  },
+
+  // Eliminar ingreso
+  delete: async (id) => {
+    const response = await api.delete(`/incomes/${id}`);
+    return response.data;
+  },
+
+  // Obtener resumen por tipo
+  getSummary: async (params = {}) => {
+    const response = await api.get('/incomes/summary', { params });
+    return response.data;
+  },
+
+  // Obtener estimación mensual de ingresos activos
+  getMonthlyEstimate: async () => {
+    const response = await api.get('/incomes/monthly-estimate');
+    return response.data;
+  },
+};
+
 // ========== HEALTH CHECK ==========
 
 export const healthCheck = async () => {

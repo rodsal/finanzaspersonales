@@ -13,6 +13,7 @@ import HomePage from './pages/HomePage';
 import ExpensesPage from './pages/ExpensesPage';
 import SummaryPage from './pages/SummaryPage';
 import SettingsPage from './pages/SettingsPage';
+import IncomePage from './pages/IncomePage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/income" element={<IncomePage />} />
             <Route path="/summary" element={<SummaryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>

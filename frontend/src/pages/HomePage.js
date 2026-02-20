@@ -49,37 +49,41 @@ const HomePage = () => {
         </Link>
       </div>
 
-      {/* Benefits Section */}
+      {/* Método 50/30/20 Section */}
       <div className="bg-gray-50 rounded-lg p-12">
-        <h2 className="text-3xl font-heading font-bold text-gray-900 mb-12 text-center">
-          Características Principales
+        <h2 className="text-3xl font-heading font-bold text-gray-900 mb-4 text-center">
+          El Método 50/30/20
         </h2>
+        <p className="text-gray-600 text-center max-w-2xl mx-auto mb-12">
+          Una regla simple y efectiva para organizar tu presupuesto mensual, popularizada por la senadora Elizabeth Warren.
+          Divide tus ingresos netos en tres categorías:
+        </p>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="text-center">
             <div className="w-16 h-16 bg-primary-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <div className="text-white font-bold text-2xl">01</div>
+              <div className="text-white font-bold text-2xl">50%</div>
             </div>
-            <h4 className="font-semibold text-gray-900 mb-3 text-lg">Interfaz Minimalista</h4>
+            <h4 className="font-semibold text-gray-900 mb-3 text-lg">Necesidades</h4>
             <p className="text-gray-600 leading-relaxed">
-              Diseño limpio y profesional enfocado en la funcionalidad sin distracciones
+              Gastos esenciales como vivienda, alimentación, transporte, servicios básicos y seguros. Lo que necesitas para vivir.
             </p>
           </div>
           <div className="text-center">
             <div className="w-16 h-16 bg-primary-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <div className="text-white font-bold text-2xl">02</div>
+              <div className="text-white font-bold text-2xl">30%</div>
             </div>
-            <h4 className="font-semibold text-gray-900 mb-3 text-lg">Reportes Detallados</h4>
+            <h4 className="font-semibold text-gray-900 mb-3 text-lg">Deseos</h4>
             <p className="text-gray-600 leading-relaxed">
-              Visualizaciones y estadísticas que facilitan la toma de decisiones financieras
+              Gastos no esenciales como entretenimiento, restaurantes, suscripciones, hobbies y compras personales.
             </p>
           </div>
           <div className="text-center">
             <div className="w-16 h-16 bg-primary-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <div className="text-white font-bold text-2xl">03</div>
+              <div className="text-white font-bold text-2xl">20%</div>
             </div>
-            <h4 className="font-semibold text-gray-900 mb-3 text-lg">Control Total</h4>
+            <h4 className="font-semibold text-gray-900 mb-3 text-lg">Ahorro e Inversión</h4>
             <p className="text-gray-600 leading-relaxed">
-              Gestiona múltiples monedas, categorías personalizadas y exporta tus datos
+              Fondo de emergencia, ahorro a largo plazo, inversiones y pago de deudas más allá del mínimo.
             </p>
           </div>
         </div>

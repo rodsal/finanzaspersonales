@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { expensesAPI } from '../utils/api';
+import { expensesAPI, incomeAPI } from '../utils/api';
 import { getCategoryColor, getCategoryIcon, MONTHS } from '../utils/constants';
 import CurrencyDisplay from '../components/common/CurrencyDisplay';
 import useCurrency from '../hooks/useCurrency';
@@ -24,8 +24,9 @@ const SummaryPage = () => {
   const [summaryByCategory, setSummaryByCategory] = useState([]);
   const [summaryByMonth, setSummaryByMonth] = useState([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [incomeSummary, setIncomeSummary] = useState({ fixed: 0, variable: 0, sporadic: 0, one_time: 0, commission: 0, total: 0 });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState('all'); // 'all' o número de mes (0-11)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
   useEffect(() => {
     loadSummary();
@@ -61,6 +62,10 @@ const SummaryPage = () => {
       // Obtener resumen por mes
       const monthResponse = await expensesAPI.getSummaryByMonth({ year: selectedYear });
       setSummaryByMonth(monthResponse.data);
+
+      // Obtener resumen de ingresos para el mismo período
+      const incomeResponse = await incomeAPI.getSummary(categoryParams);
+      setIncomeSummary(incomeResponse.data);
     } catch (error) {
       console.error('Error al cargar resumen:', error);
       toast.error('Error al cargar el resumen');
@@ -282,6 +287,61 @@ const SummaryPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Ingresos vs Gastos */}
+      {(() => {
+        const totalIncome = incomeSummary.total || 0;
+        const balance = totalIncome - totalExpenses;
+        const isPositive = balance >= 0;
+        return (
+          <div className="card mb-8">
+            <h2 className="text-xl font-heading font-semibold text-gray-900 mb-6">
+              Ingresos vs Gastos - {getPeriodName()}
+            </h2>
+            <div className="grid sm:grid-cols-3 gap-4 mb-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-700 mb-1">Total Ingresos</p>
+                <p className="text-2xl font-bold text-green-600">
+                  <CurrencyDisplay amount={totalIncome} />
+                </p>
+              </div>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-700 mb-1">Total Gastos</p>
+                <p className="text-2xl font-bold text-red-600">
+                  <CurrencyDisplay amount={totalExpenses} />
+                </p>
+              </div>
+              <div className={`${isPositive ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4`}>
+                <p className={`text-sm ${isPositive ? 'text-green-700' : 'text-red-700'} mb-1`}>Balance</p>
+                <p className={`text-2xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                  {!isPositive && '-'}<CurrencyDisplay amount={Math.abs(balance)} />
+                </p>
+              </div>
+            </div>
+
+            {/* Desglose de ingresos */}
+            <div className="border-t border-gray-200 pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-3">Desglose de ingresos</p>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: 'Fijo', value: incomeSummary.fixed, color: 'text-green-600' },
+                  { label: 'Variable', value: incomeSummary.variable, color: 'text-blue-600' },
+                  { label: 'Esporádico', value: incomeSummary.sporadic, color: 'text-purple-600' },
+                  { label: 'Único Mensual', value: incomeSummary.one_time, color: 'text-amber-600' },
+                  { label: 'Comisiones', value: incomeSummary.commission, color: 'text-orange-600' },
+                ].filter(item => item.value > 0).map((item) => (
+                  <div key={item.label} className="flex justify-between items-center bg-gray-50 rounded-lg px-3 py-2">
+                    <span className="text-sm text-gray-600">{item.label}</span>
+                    <span className={`text-sm font-semibold ${item.color}`}>
+                      <CurrencyDisplay amount={item.value} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Resumen por categoría */}
       <div className="grid lg:grid-cols-2 gap-6 mb-8">

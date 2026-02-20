@@ -18,6 +18,7 @@ const Header = () => {
   const navLinks = [
     { path: '/', label: 'Inicio' },
     { path: '/expenses', label: 'Gastos' },
+    { path: '/income', label: 'Ingresos' },
     { path: '/summary', label: 'Resumen' },
     { path: '/settings', label: 'Configuración' },
   ];

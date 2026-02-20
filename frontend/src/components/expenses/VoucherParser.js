@@ -33,8 +33,21 @@ const VoucherParser = ({ onSuccess, categories = [] }) => {
     for (const pattern of amountPatterns) {
       const match = text.match(pattern);
       if (match) {
-        // Limpiar el número: eliminar puntos y reemplazar coma por punto si es decimal
-        let amount = match[1].replace(/\./g, '').replace(',', '.');
+        let amount = match[1];
+        if (amount.includes(',') && amount.includes('.')) {
+          const lastComma = amount.lastIndexOf(',');
+          const lastDot = amount.lastIndexOf('.');
+          if (lastDot > lastComma) {
+            // Formato: 4,185.00 - coma es miles, punto es decimal
+            amount = amount.replace(/,/g, '');
+          } else {
+            // Formato: 4.185,00 - punto es miles, coma es decimal
+            amount = amount.replace(/\./g, '').replace(',', '.');
+          }
+        } else {
+          // Solo un tipo de separador - asumir formato CR (punto miles, coma decimal)
+          amount = amount.replace(/\./g, '').replace(',', '.');
+        }
         data.amount = parseFloat(amount);
         if (!isNaN(data.amount) && data.amount > 0) {
           break;
@@ -43,43 +56,55 @@ const VoucherParser = ({ onSuccess, categories = [] }) => {
     }
 
     // Extraer fecha - buscar patrones de fecha
+    const monthsES = {
+      enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+      julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
+    };
+
+    const monthsEN = {
+      jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3,
+      apr: 4, april: 4, may: 5, jun: 6, june: 6,
+      jul: 7, july: 7, aug: 8, august: 8, sep: 9, september: 9,
+      oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+    };
+
     const datePatterns = [
-      /(\d{1,2})[/-](\d{1,2})[/-](\d{4})/,
-      /(\d{4})[/-](\d{1,2})[/-](\d{1,2})/,
-      /(\d{1,2})\s+(?:de\s+)?([a-záéíóú]+)\s+(?:de\s+)?(\d{4})/i,
+      { regex: /(\d{1,2})[/-](\d{1,2})[/-](\d{4})/, type: 'dmy' },
+      { regex: /(\d{4})[/-](\d{1,2})[/-](\d{1,2})/, type: 'ymd' },
+      { regex: /(\d{1,2})\s+(?:de\s+)?([a-záéíóú]+)\s+(?:de\s+)?(\d{4})/i, type: 'es' },
+      { regex: /([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})/, type: 'en' },
     ];
 
-    for (const pattern of datePatterns) {
-      const match = text.match(pattern);
+    for (const { regex, type } of datePatterns) {
+      const match = text.match(regex);
       if (match) {
         try {
           let day, month, year;
 
-          if (pattern.source.includes('[a-z')) {
-            // Formato: 15 de enero de 2024
-            const months = {
-              enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
-              julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
-            };
+          if (type === 'es') {
             day = parseInt(match[1]);
-            month = months[match[2].toLowerCase()];
+            month = monthsES[match[2].toLowerCase()];
             year = parseInt(match[3]);
-          } else if (match[1].length === 4) {
-            // Formato: YYYY-MM-DD
+          } else if (type === 'en') {
+            month = monthsEN[match[1].toLowerCase()];
+            day = parseInt(match[2]);
+            year = parseInt(match[3]);
+          } else if (type === 'ymd') {
             year = parseInt(match[1]);
             month = parseInt(match[2]);
             day = parseInt(match[3]);
           } else {
-            // Formato: DD-MM-YYYY
             day = parseInt(match[1]);
             month = parseInt(match[2]);
             year = parseInt(match[3]);
           }
 
-          const date = new Date(year, month - 1, day);
-          if (!isNaN(date.getTime())) {
-            data.date = date.toISOString().split('T')[0];
-            break;
+          if (month) {
+            const date = new Date(year, month - 1, day);
+            if (!isNaN(date.getTime())) {
+              data.date = date.toISOString().split('T')[0];
+              break;
+            }
           }
         } catch (e) {
           console.error('Error parsing date:', e);

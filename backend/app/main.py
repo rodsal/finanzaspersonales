@@ -5,7 +5,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 from app.config import settings
-from app.routers import expenses_bp, categories_bp
+from app.routers import expenses_bp, categories_bp, income_bp
 from app.utils import init_db
 
 
@@ -25,6 +25,7 @@ def create_app() -> Flask:
     # Registrar blueprints (routers)
     app.register_blueprint(expenses_bp)
     app.register_blueprint(categories_bp)
+    app.register_blueprint(income_bp)
 
     # Health check endpoint
     @app.route("/api/health", methods=["GET"])
@@ -48,6 +49,7 @@ def create_app() -> Flask:
                 "health": "/api/health",
                 "expenses": "/api/expenses",
                 "categories": "/api/categories",
+                "incomes": "/api/incomes",
             },
         }), 200
 
