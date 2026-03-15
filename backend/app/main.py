@@ -5,7 +5,11 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 from app.config import settings
+<<<<<<< Updated upstream
 from app.routers import expenses_bp, categories_bp, income_bp
+=======
+from app.routers import expenses_bp, categories_bp, income_bp, auth_bp, tasks_bp, trips_bp
+>>>>>>> Stashed changes
 from app.utils import init_db
 
 
@@ -26,6 +30,12 @@ def create_app() -> Flask:
     app.register_blueprint(expenses_bp)
     app.register_blueprint(categories_bp)
     app.register_blueprint(income_bp)
+<<<<<<< Updated upstream
+=======
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(tasks_bp)
+    app.register_blueprint(trips_bp)
+>>>>>>> Stashed changes
 
     # Health check endpoint
     @app.route("/api/health", methods=["GET"])
