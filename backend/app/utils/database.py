@@ -10,6 +10,12 @@ from typing import Generator
 from app.config import settings
 from app.models.expense import Base
 from app.models.income import Income  # noqa: F401 — necesario para que Base.metadata conozca la tabla
+<<<<<<< Updated upstream
+=======
+from app.models.user import User  # noqa: F401 — necesario para que Base.metadata conozca la tabla
+from app.models.task import Project, Task  # noqa: F401 — necesario para que Base.metadata conozca las tablas
+from app.models.trip import Trip, TripExpense  # noqa: F401 — necesario para que Base.metadata conozca las tablas
+>>>>>>> Stashed changes
 
 
 # Crear engine de base de datos

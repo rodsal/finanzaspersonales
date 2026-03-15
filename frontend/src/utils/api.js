@@ -152,6 +152,12 @@ export const incomeAPI = {
     return response.data;
   },
 
+  // Obtener resumen de ingresos por mes
+  getSummaryByMonth: async (params = {}) => {
+    const response = await api.get('/incomes/summary/month', { params });
+    return response.data;
+  },
+
   // Obtener estimación mensual de ingresos activos
   getMonthlyEstimate: async () => {
     const response = await api.get('/incomes/monthly-estimate');
@@ -159,6 +165,104 @@ export const incomeAPI = {
   },
 };
 
+<<<<<<< Updated upstream
+=======
+// ========== PROJECTS API ==========
+
+export const projectsAPI = {
+  getAll: async () => {
+    const response = await api.get('/projects');
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/projects', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/projects/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/projects/${id}`);
+    return response.data;
+  },
+};
+
+// ========== TASKS API ==========
+
+export const tasksAPI = {
+  getAll: async (params = {}) => {
+    const response = await api.get('/tasks', { params });
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/tasks/${id}`);
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/tasks', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/tasks/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/tasks/${id}`);
+    return response.data;
+  },
+  getSummary: async () => {
+    const response = await api.get('/tasks/summary');
+    return response.data;
+  },
+};
+
+// ========== TRIPS API ==========
+
+export const tripsAPI = {
+  getAll: async () => {
+    const response = await api.get('/trips');
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/trips', data);
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/trips/${id}`);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/trips/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/trips/${id}`);
+    return response.data;
+  },
+  getSummary: async (id) => {
+    const response = await api.get(`/trips/${id}/summary`);
+    return response.data;
+  },
+  getExpenses: async (id) => {
+    const response = await api.get(`/trips/${id}/expenses`);
+    return response.data;
+  },
+  createExpense: async (id, data) => {
+    const response = await api.post(`/trips/${id}/expenses`, data);
+    return response.data;
+  },
+  updateExpense: async (id, expenseId, data) => {
+    const response = await api.put(`/trips/${id}/expenses/${expenseId}`, data);
+    return response.data;
+  },
+  deleteExpense: async (id, expenseId) => {
+    const response = await api.delete(`/trips/${id}/expenses/${expenseId}`);
+    return response.data;
+  },
+};
+
+>>>>>>> Stashed changes
 // ========== HEALTH CHECK ==========
 
 export const healthCheck = async () => {

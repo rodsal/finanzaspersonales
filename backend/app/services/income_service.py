@@ -162,6 +162,54 @@ class IncomeService:
         }
 
     @staticmethod
+    def get_summary_by_month(db: Session, user_id: int, year: int) -> List[Dict]:
+        """
+        Resumen de ingresos agrupados por mes para un año dado.
+        - Ingresos recurrentes activos (fixed/variable): se proyectan en todos los meses.
+        - Ingresos no recurrentes (sporadic/one_time/commission): solo en su mes de fecha.
+        """
+        # Ingreso mensual recurrente
+        recurrent = db.query(Income).filter(
+            Income.user_id == user_id,
+            Income.is_active == True,
+            Income.income_type.in_(["fixed", "variable"]),
+        ).all()
+
+        monthly_recurrent = 0.0
+        for inc in recurrent:
+            multiplier = {"weekly": 4.0, "biweekly": 2.0, "monthly": 1.0}.get(inc.frequency, 1.0)
+            monthly_recurrent += inc.amount * multiplier
+
+        # Ingresos no recurrentes agrupados por mes
+        sporadic_rows = db.query(
+            extract('month', Income.date).label('month'),
+            func.sum(Income.amount).label('total'),
+        ).filter(
+            Income.user_id == user_id,
+            Income.income_type.in_(["sporadic", "one_time", "commission"]),
+            extract('year', Income.date) == year,
+        ).group_by(
+            extract('month', Income.date),
+        ).all()
+
+        sporadic_by_month = {int(r.month): float(r.total) for r in sporadic_rows}
+
+        # Proyectar hasta el mes actual si es el año en curso, sino diciembre
+        current = datetime.now()
+        max_month = current.month if current.year == year else 12
+
+        return [
+            {
+                'month': m,
+                'year': year,
+                'total': monthly_recurrent + sporadic_by_month.get(m, 0.0),
+                'count': 1,
+            }
+            for m in range(1, max_month + 1)
+            if monthly_recurrent > 0 or m in sporadic_by_month
+        ]
+
+    @staticmethod
     def get_summary(
         db: Session,
         start_date: Optional[datetime] = None,

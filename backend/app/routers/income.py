@@ -190,6 +190,19 @@ def delete_income(income_id: int):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@income_bp.route("/summary/month", methods=["GET"])
+@login_required
+def get_summary_by_month():
+    """Resumen de ingresos agrupados por mes. Query param: year (int)."""
+    try:
+        year = request.args.get("year", datetime.now().year, type=int)
+        with get_db_session() as db:
+            data = IncomeService.get_summary_by_month(db, g.current_user_id, year)
+            return jsonify({"success": True, "data": data}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @income_bp.route("/summary", methods=["GET"])
 def get_summary():
     """
