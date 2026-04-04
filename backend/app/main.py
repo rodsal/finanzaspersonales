@@ -42,8 +42,13 @@ def create_app() -> Flask:
         return jsonify({"success": False, "error": "Error interno del servidor"}), 500
 
     with app.app_context():
-        init_db()
-        print("✅ Aplicación Flask inicializada correctamente")
+        try:
+            init_db()
+            print("✅ Base de datos inicializada")
+        except Exception as e:
+            print(f"⚠️  DB no disponible al inicio: {e}")
+
+    print("✅ Aplicación Flask lista")
 
     return app
 
