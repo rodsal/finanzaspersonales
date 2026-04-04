@@ -2,10 +2,10 @@
 Router de endpoints para ingresos.
 """
 from datetime import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 
 from app.services.income_service import IncomeService
-from app.utils import get_db_session
+from app.utils import get_db_session, login_required
 
 income_bp = Blueprint("income", __name__, url_prefix="/api/incomes")
 

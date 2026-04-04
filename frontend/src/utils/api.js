@@ -1,13 +1,20 @@
 import axios from 'axios';
 
 // Configuración base de axios
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Interceptor: attach auth token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 });
 
 // Interceptor para manejar errores globalmente
@@ -18,6 +25,23 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// ========== AUTH API ==========
+
+export const authAPI = {
+  login: async (email, password) => {
+    const response = await api.post('/auth/login', { email, password });
+    return response.data;
+  },
+  register: async (name, email, password) => {
+    const response = await api.post('/auth/register', { name, email, password });
+    return response.data;
+  },
+  getMe: async () => {
+    const response = await api.get('/auth/me');
+    return response.data;
+  },
+};
 
 // ========== EXPENSES API ==========
 
@@ -165,57 +189,6 @@ export const incomeAPI = {
   },
 };
 
-<<<<<<< Updated upstream
-=======
-// ========== PROJECTS API ==========
-
-export const projectsAPI = {
-  getAll: async () => {
-    const response = await api.get('/projects');
-    return response.data;
-  },
-  create: async (data) => {
-    const response = await api.post('/projects', data);
-    return response.data;
-  },
-  update: async (id, data) => {
-    const response = await api.put(`/projects/${id}`, data);
-    return response.data;
-  },
-  delete: async (id) => {
-    const response = await api.delete(`/projects/${id}`);
-    return response.data;
-  },
-};
-
-// ========== TASKS API ==========
-
-export const tasksAPI = {
-  getAll: async (params = {}) => {
-    const response = await api.get('/tasks', { params });
-    return response.data;
-  },
-  getById: async (id) => {
-    const response = await api.get(`/tasks/${id}`);
-    return response.data;
-  },
-  create: async (data) => {
-    const response = await api.post('/tasks', data);
-    return response.data;
-  },
-  update: async (id, data) => {
-    const response = await api.put(`/tasks/${id}`, data);
-    return response.data;
-  },
-  delete: async (id) => {
-    const response = await api.delete(`/tasks/${id}`);
-    return response.data;
-  },
-  getSummary: async () => {
-    const response = await api.get('/tasks/summary');
-    return response.data;
-  },
-};
 
 // ========== TRIPS API ==========
 
@@ -262,7 +235,6 @@ export const tripsAPI = {
   },
 };
 
->>>>>>> Stashed changes
 // ========== HEALTH CHECK ==========
 
 export const healthCheck = async () => {
