@@ -63,9 +63,10 @@ class Expense(Base):
     amount = Column(Float, nullable=False)
     category = Column(String(100), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     date = Column(DateTime, nullable=False, index=True, default=datetime.utcnow)
     notes = Column(String(500), nullable=True)
-    payment_method = Column(String(50), nullable=True)  # Efectivo, Tarjeta, Transferencia, etc.
+    payment_method = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

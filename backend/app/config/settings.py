@@ -38,6 +38,9 @@ class Settings:
     # Configuración de timezone
     TIMEZONE: str = os.getenv("TIMEZONE", "America/Costa_Rica")
 
+    # API Key para integraciones externas (ej. Apple Pay Shortcuts)
+    SHORTCUT_API_KEY: str = os.getenv("SHORTCUT_API_KEY", "finanzas-shortcut-key-2024")
+
     @classmethod
     def get_database_url(cls) -> str:
         """

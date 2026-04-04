@@ -22,6 +22,7 @@ class ExpenseService:
         notes: Optional[str] = None,
         payment_method: Optional[str] = None,
         category_id: Optional[int] = None,
+        user_id: Optional[str] = None,
     ) -> Expense:
         """Crea un nuevo gasto."""
         expense = Expense(
@@ -29,6 +30,7 @@ class ExpenseService:
             amount=amount,
             category=category,
             category_id=category_id,
+            user_id=user_id,
             date=date or datetime.utcnow(),
             notes=notes,
             payment_method=payment_method,
