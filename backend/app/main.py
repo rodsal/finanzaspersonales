@@ -13,7 +13,7 @@ def create_app() -> Flask:
 
     app.config["SECRET_KEY"] = settings.SECRET_KEY
     app.config["DEBUG"] = settings.DEBUG
-    app.config["SQLALCHEMY_DATABASE_URI"] = settings.DATABASE_URL
+    app.config["SQLALCHEMY_DATABASE_URI"] = settings.get_database_url()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     CORS(app, origins=settings.CORS_ORIGINS)
