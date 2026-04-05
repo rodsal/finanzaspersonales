@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./
 
-CMD gunicorn -w 1 -b 0.0.0.0:${PORT:-8000} --timeout 120 --log-level debug --capture-output --error-logfile=- wsgi:app
+CMD python wsgi.py
