@@ -39,7 +39,8 @@ def create_app() -> Flask:
 
     @app.errorhandler(500)
     def internal_error(error):
-        return jsonify({"success": False, "error": "Error interno del servidor"}), 500
+        import traceback
+        return jsonify({"success": False, "error": str(error), "trace": traceback.format_exc()}), 500
 
     with app.app_context():
         try:
