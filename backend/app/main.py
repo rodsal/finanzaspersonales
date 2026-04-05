@@ -41,7 +41,12 @@ def create_app() -> Flask:
     def internal_error(error):
         return jsonify({"success": False, "error": "Error interno del servidor"}), 500
 
-    # DB init deshabilitado temporalmente para diagnóstico
+    with app.app_context():
+        try:
+            init_db()
+            print("✅ Base de datos inicializada")
+        except Exception as e:
+            print(f"⚠️  DB no disponible al inicio: {e}")
 
     print("✅ Aplicación Flask lista")
 

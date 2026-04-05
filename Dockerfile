@@ -13,4 +13,4 @@ COPY backend/ ./
 
 EXPOSE 8080
 
-CMD python wsgi.py
+CMD gunicorn -w 2 -b 0.0.0.0:${PORT:-8000} --timeout 120 --log-level info wsgi:app
