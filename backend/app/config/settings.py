@@ -20,8 +20,8 @@ class Settings:
 
     # Configuración de Base de Datos PostgreSQL
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://postgres:postgres@localhost:5432/finanzas_personales"
+        "APP_DATABASE_URL",
+        os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/finanzas_personales")
     )
 
     # Configuración de CORS
