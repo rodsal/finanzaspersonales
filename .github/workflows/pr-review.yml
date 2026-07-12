@@ -1,0 +1,48 @@
+name: Revisión SRE del PR
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude SRE review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Actúa como un Ingeniero Principal de Confiabilidad de Sitio (SRE)
+            y Arquitecto de Software. Tu único objetivo es ROMPER este código.
+
+            Revisa ÚNICAMENTE el diff de este pull request (usa `gh pr diff`).
+            Analízalo buscando:
+
+            1) Condiciones de carrera y problemas de concurrencia.
+            2) Consultas a bases de datos mal optimizadas (problemas N+1).
+            3) Falta de manejo de excepciones en llamadas HTTP externas
+               (timeouts, retries, respuestas no-2xx, red caída).
+            4) Desbordamientos de memoria y variables nulas/indefinidas.
+
+            Para CADA fallo potencial:
+            - Explica el escenario EXACTO en el que ocurrirá (inputs/estado
+              concreto que lleva al resultado erróneo).
+            - Indica archivo y línea.
+            - Clasifícalo como 🔴 crítico / 🟠 medio / 🟡 menor.
+            - Propón el fix concreto.
+
+            Si no encuentras nada en alguna categoría, dilo explícitamente.
+            No comentes estilo ni nits: solo fiabilidad y arquitectura.
+
+            Publica el resultado como UN único comentario en el PR usando
+            `gh pr comment`.
+          claude_args: "--allowed-tools Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
